@@ -9,6 +9,7 @@
 | 메서드/경로 | 설명 |
 | --- | --- |
 | `POST /me/portal-sync` | body로 학번/포털 비밀번호를 받아 서버가 One-Stop에 직접 로그인, 학적부/성적/졸업예정정보를 크롤링해 DB에 저장. 로그인 실패 시 401 |
+| `GET /me/graduation` | 저장된 성적/학적 프로그램과 요건세트를 대조해 주전공 졸업요건 충족 여부를 계산. 기본은 primary만 평가 |
 | `PATCH /me/advisor-consulted` | 지도교수 상담 여부를 사용자가 직접 체크/해제 (크롤링 대상 아님, 단순 토글) |
 
 인증은 `get_current_user`(`app/api/auth.py`) 재사용. 크롤링은 Playwright 동기 API로
@@ -105,9 +106,9 @@
 단과대/학부·학과/전공으로 분리한다 — 마지막 단어가 "전공"으로 끝나면 major, 그 앞 단어가
 "대학"으로 끝나면 college로 판단. `"OO과"`처럼 세부 전공이 없는 학과는 major가 null.
 
-**`graduation_requirements`도 department_id/major_id로 이 계층을 참조**하지만, 아직
-실제 요건 데이터(전공별 필수 학점, 필수과목 목록 등)는 채워지지 않았다 — 정식 학사요람
-출처 없이 채우면 졸업 판단을 오도할 위험이 있어 보류 중.
+`graduation_requirements`는 라이브 flat 테이블에서 주전공 졸업학점 기준 125행을 담고 있고,
+새 스키마에서는 `requirement_sets`/`requirement_categories`가 이를 대체한다.
+주전공 계산 API는 새 스키마 요건세트와 `student_course_records`를 대조한다.
 
 ## 학교 계층 / 교육과정 시드 데이터
 
@@ -116,10 +117,10 @@
 전부 시드되어 있다 (`backend/seeds/school_hierarchy_mapping.csv`,
 `ais_courses_2026.csv`, `scripts/seed_school_hierarchy.py`,
 `scripts/import_courses_from_ais.py`). 이상 데이터 케이스와 컨벤션(학과 조회 시
-`major_id IS NULL` 필수 등)은 [db-seed-school-hierarchy-and-courses.md](../progress/db-seed-school-hierarchy-and-courses.md) 참고.
+`major_id IS NULL` 필수 등)은 [CHANGELOG.md](../CHANGELOG.md)의 최신 DB seed 항목 참고.
 
-**`graduation_requirements`(졸업요건 기준)만 예외로 비어있다** — 위 계층/과목 데이터와
-달리 공식 학사요람 출처가 확보되지 않아 의도적으로 안 채웠다.
+**라이브 flat `graduation_requirements`에는 2026 주전공 졸업학점 기준 125행이 채워져 있다** —
+다만 새 `requirement_sets` 스키마의 부전공/복수전공/교직 세부 요건 seed는 아직 완성 전이다.
 
 ## 사용자 직접 입력 프로필 (`app/api/profile.py`)
 
@@ -142,6 +143,7 @@
 
 ## 알려진 한계 / TODO
 
-- 실제 충족 여부 판정 로직 미구현 (`graduation_requirements`에 요건 데이터 자체가 없음)
+- 부전공/복수전공/교직 세부 요건 seed는 아직 우선순위에서 제외되어 기본 계산에 포함하지 않음
+- 효원핵심/효원균형/효원창의처럼 성적표 대분류만으로 분리할 수 없는 세부 교양 영역은 판정 불가로 노출
 - `graduation.py`(졸업요건기준 및 충족여부 원본)는 크롤링만 되고 아직 DB 매핑 안 함
-- 프론트엔드 미연동 (버튼 눌러서 크롤링 트리거하는 UI, 프로필 CRUD 폼 UI 없음)
+- 프론트엔드 미연동 (버튼 눌러서 크롤링/졸업계산을 트리거하는 UI, 프로필 CRUD 폼 UI 없음)
