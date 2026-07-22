@@ -4,8 +4,7 @@ const MOCK_ACCESS_TOKEN_KEY = "planUMockAccessToken";
 const MOCK_USER_KEY = "planUMockUser";
 
 export const isMockAuthEnabled =
-  import.meta.env.DEV &&
-  (import.meta.env.VITE_USE_MOCK_AUTH === "true" || import.meta.env.VITE_USE_MOCK_STUDENT_DATA === "true");
+  import.meta.env.VITE_USE_MOCK_AUTH === "true" || import.meta.env.VITE_USE_MOCK_STUDENT_DATA === "true";
 
 export type AcademicProgram = {
   major: string;

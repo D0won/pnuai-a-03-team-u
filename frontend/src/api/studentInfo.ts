@@ -1,7 +1,6 @@
 import { apiClient } from "./client";
 
-export const isMockStudentDataEnabled =
-  import.meta.env.DEV && import.meta.env.VITE_USE_MOCK_STUDENT_DATA === "true";
+export const isMockStudentDataEnabled = import.meta.env.VITE_USE_MOCK_STUDENT_DATA === "true";
 
 export type CourseRecord = {
   course_name: string;
